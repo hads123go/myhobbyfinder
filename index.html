@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hobby Compass</title>
+
+<!-- Two Google Fonts: Fraunces for headings (a little vintage, compass-like),
+     Inter for body text (clean and easy to read). -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  /* ---------- Color palette & shared values ----------
+     Keeping these as CSS variables means every part of the page
+     that needs "the accent color" or "the dark background" points
+     back to one place, so a color can be changed in one spot. */
+  :root {
+    --bg: #1b1f2a;
+    --bg-card: #232838;
+    --text-light: #f4ecd8;
+    --text-muted: #aab0c4;
+    --paper: #f4ecd8;
+    --paper-text: #2a2417;
+    --accent: #c9a227;
+    --accent-dark: #a8841c;
+    --needle-south: #e8e2d0;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text-light);
+    font-family: 'Inter', sans-serif;
+    line-height: 1.5;
+  }
+
+  h1, h2, h3 {
+    font-family: 'Fraunces', serif;
+    margin: 0 0 0.5em 0;
+  }
+
+  .page {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 2rem 1.25rem 4rem;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+  }
+
+  header h1 {
+    font-size: 2.2rem;
+    color: var(--accent);
+  }
+
+  header p {
+    color: var(--text-muted);
+    margin: 0;
+  }
+
+  /* ---------- Quiz card ---------- */
+  #quiz-section {
+    background: var(--bg-card);
+    border-radius: 12px;
+    padding: 1.75rem;
+  }
+
+  #progress-text {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+  }
+
+  #progress-bar-track {
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 999px;
+    height: 6px;
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+  }
+
+  #progress-bar-fill {
+    background: var(--accent);
+    height: 100%;
+    width: 0%;
+    transition: width 0.3s ease;
+  }
+
+  #question-text {
+    font-size: 1.25rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .option-button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: var(--bg);
+    color: var(--text-light);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    padding: 0.85rem 1rem;
+    margin-bottom: 0.65rem;
+    font-family: inherit;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+
+  .option-button:hover {
+    border-color: var(--accent);
+    background: #2a3042;
+  }
+
+  /* ---------- Result section ---------- */
+  #result-section {
+    background: var(--bg-card);
+    border-radius: 12px;
+    padding: 2rem 1.75rem;
+    text-align: center;
+  }
+
+  /* Hidden until the quiz finishes. Toggled from JavaScript by
+     adding/removing the "hidden" class (defined once, below). */
+  .hidden {
+    display: none;
+  }
+
+  /* The compass itself: a circle with N/E/S/W labels and a needle
+     that rotates to point at the winning category. */
+  #compass {
+    position: relative;
+    width: 220px;
+    height: 220px;
+    margin: 0 auto 1.5rem;
+    border-radius: 50%;
+    background: var(--bg);
+    border: 4px solid var(--accent);
+  }
+
+  .compass-label {
+    position: absolute;
+    color: var(--text-muted);
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+
+  #label-north { top: 10px; left: 50%; transform: translateX(-50%); }
+  #label-east  { right: 12px; top: 50%; transform: translateY(-50%); }
+  #label-south { bottom: 10px; left: 50%; transform: translateX(-50%); }
+  #label-west  { left: 12px; top: 50%; transform: translateY(-50%); }
+
+  /* The needle rotates by changing this element's "transform" in
+     JavaScript. The transition below is what makes it glide to its
+     new position instead of jumping there instantly. */
+  #needle {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    transform: translate(-50%, -50%) rotate(0deg);
+    transition: transform 1.2s ease;
+  }
+
+  /* The needle is built from two stacked triangles (a classic CSS
+     trick: a wide border on one side of a zero-size box renders as
+     a triangle). Together they form a pointed diamond shape. */
+  .needle-half {
+    width: 0;
+    height: 0;
+    border-left: 9px solid transparent;
+    border-right: 9px solid transparent;
+  }
+
+  #needle-north {
+    border-bottom: 78px solid var(--accent);
+  }
+
+  #needle-south {
+    border-top: 78px solid var(--needle-south);
+  }
+
+  #result-category {
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+  }
+
+  #result-hobby-name {
+    font-size: 1.75rem;
+    margin-bottom: 0.5rem;
+  }
+
+  #result-blurb {
+    color: var(--text-muted);
+    max-width: 480px;
+    margin: 0 auto 1rem;
+  }
+
+  #result-also-like {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    margin-bottom: 1.5rem;
+  }
+
+  button.primary-button {
+    background: var(--accent);
+    color: var(--paper-text);
+    border: none;
+    border-radius: 8px;
+    padding: 0.75rem 1.5rem;
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  button.primary-button:hover {
+    background: var(--accent-dark);
+  }
+
+  /* ---------- Browse-all section ---------- */
+  #browse-section {
+    margin-top: 3rem;
+  }
+
+  #browse-section h2 {
+    text-align: center;
+    color: var(--accent);
+  }
+
+  .category-group {
+    margin-bottom: 1.75rem;
+  }
+
+  .category-group h3 {
+    color: var(--text-light);
+    font-size: 1.05rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .hobby-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 0.75rem;
+  }
+
+  .hobby-card {
+    background: var(--paper);
+    color: var(--paper-text);
+    border-radius: 8px;
+    padding: 0.9rem 1rem;
+  }
+
+  .hobby-card strong {
+    display: block;
+    margin-bottom: 0.25rem;
+  }
+
+  .hobby-card span {
+    font-size: 0.85rem;
+    opacity: 0.8;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <h1>Hobby Compass</h1>
+    <p>Answer a few questions and let the needle find your hobby.</p>
+  </header>
+
+  <main>
+
+    <!-- ===================== QUIZ ===================== -->
+    <section id="quiz-section">
+      <p id="progress-text">Question 1 of 16</p>
+      <div id="progress-bar-track">
+        <div id="progress-bar-fill"></div>
+      </div>
+      <h2 id="question-text"></h2>
+      <div id="options-container"></div>
+    </section>
+
+    <!-- ===================== RESULT (hidden until quiz ends) ===================== -->
+    <section id="result-section" class="hidden">
+      <div id="compass">
+        <span class="compass-label" id="label-north">N</span>
+        <span class="compass-label" id="label-east">E</span>
+        <span class="compass-label" id="label-south">S</span>
+        <span class="compass-label" id="label-west">W</span>
+        <div id="needle">
+          <div class="needle-half" id="needle-north"></div>
+          <div class="needle-half" id="needle-south"></div>
+        </div>
+      </div>
+      <p id="result-category"></p>
+      <h2 id="result-hobby-name"></h2>
+      <p id="result-blurb"></p>
+      <p id="result-also-like"></p>
+      <button class="primary-button" id="restart-button">Take the quiz again</button>
+    </section>
+
+    <!-- ===================== BROWSE ALL ===================== -->
+    <section id="browse-section">
+      <h2>Browse all hobbies</h2>
+      <div id="browse-container"></div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+  // ---------------------------------------------------------------
+  // DATA
+  //
+  // Four categories, each pointing at a compass direction. Each
+  // category has three hobbies. The first hobby listed in a
+  // category is the "flagship" one shown as the main result.
+  // ---------------------------------------------------------------
+  const CATEGORIES = {
+    active: {
+      label: "Active",
+      angle: 0, // north
+      hobbies: [
+        { name: "Rock Climbing", blurb: "A full-body challenge that mixes strength with problem-solving." },
+        { name: "Hiking", blurb: "Explore trails at your own pace, with a view as the reward." },
+        { name: "Cycling", blurb: "Cover ground, build endurance, and enjoy the wind in your face." }
+      ]
+    },
+    creative: {
+      label: "Creative",
+      angle: 90, // east
+      hobbies: [
+        { name: "Painting", blurb: "Turn a blank canvas into whatever is in your head." },
+        { name: "Photography", blurb: "Train your eye to notice the moments worth keeping." },
+        { name: "Woodworking", blurb: "Build something real and useful with your own two hands." }
+      ]
+    },
+    social: {
+      label: "Social",
+      angle: 180, // south
+      hobbies: [
+        { name: "Board Games", blurb: "An excuse to get people around a table and compete for fun." },
+        { name: "Team Sports", blurb: "Shared effort, shared wins, and a built-in group of friends." },
+        { name: "Volunteering", blurb: "Give your time to something bigger, alongside other people." }
+      ]
+    },
+    calm: {
+      label: "Calm",
+      angle: 270, // west
+      hobbies: [
+        { name: "Reading", blurb: "A quiet way to live a hundred other lives." },
+        { name: "Gardening", blurb: "Slow, steady progress you can watch grow over a season." },
+        { name: "Meditation", blurb: "A daily reset for a calmer, more focused mind." }
+      ]
+    }
+  };
+
+  // Each question has four options, one per category, so every
+  // question nudges the needle a little in one of four directions.
+  const QUESTIONS = [
+    { text: "It's a free Saturday with no plans. What sounds best?", options: [
+      { text: "Getting outside and moving my body", category: "active" },
+      { text: "Making something with my hands", category: "creative" },
+      { text: "Hanging out with a group of friends", category: "social" },
+      { text: "A quiet day to myself", category: "calm" } ] },
+    { text: "Pick a vacation.", options: [
+      { text: "A hiking trip in the mountains", category: "active" },
+      { text: "An art and museum tour", category: "creative" },
+      { text: "A big group trip with friends", category: "social" },
+      { text: "A quiet cabin in the woods", category: "calm" } ] },
+    { text: "What's your ideal way to unwind after a long day?", options: [
+      { text: "A workout or a walk", category: "active" },
+      { text: "Working on a personal project", category: "creative" },
+      { text: "Catching up with people I care about", category: "social" },
+      { text: "Reading or relaxing quietly", category: "calm" } ] },
+    { text: "Pick a work environment.", options: [
+      { text: "One where I'm on my feet, moving around", category: "active" },
+      { text: "One where I can design or build things", category: "creative" },
+      { text: "One full of people and collaboration", category: "social" },
+      { text: "A calm, quiet space I can focus in", category: "calm" } ] },
+    { text: "Choose a superpower.", options: [
+      { text: "Super speed", category: "active" },
+      { text: "The ability to create anything I imagine", category: "creative" },
+      { text: "The ability to bring any group together", category: "social" },
+      { text: "Perfect focus and calm under pressure", category: "calm" } ] },
+    { text: "What kind of movie do you gravitate towards?", options: [
+      { text: "Action and adventure", category: "active" },
+      { text: "Visually stunning or artistic films", category: "creative" },
+      { text: "Feel-good ensemble comedies", category: "social" },
+      { text: "Slow, thoughtful dramas", category: "calm" } ] },
+    { text: "Pick a childhood memory you loved.", options: [
+      { text: "Playing outside until dark", category: "active" },
+      { text: "Building or drawing something new", category: "creative" },
+      { text: "Playing games with a big group", category: "social" },
+      { text: "Getting lost in a good book", category: "calm" } ] },
+    { text: "What motivates you most?", options: [
+      { text: "Physical challenge", category: "active" },
+      { text: "Self-expression", category: "creative" },
+      { text: "Connection with others", category: "social" },
+      { text: "Inner peace", category: "calm" } ] },
+    { text: "Choose a season.", options: [
+      { text: "Summer — long days to be outside", category: "active" },
+      { text: "Fall — a cozy, inspiring atmosphere", category: "creative" },
+      { text: "Any season, as long as I'm with people", category: "social" },
+      { text: "Winter — quiet and slow", category: "calm" } ] },
+    { text: "Pick a place to spend an afternoon.", options: [
+      { text: "A trail or park", category: "active" },
+      { text: "A studio or workshop", category: "creative" },
+      { text: "A lively cafe with friends", category: "social" },
+      { text: "A quiet garden or library", category: "calm" } ] },
+    { text: "What do you value most in a hobby?", options: [
+      { text: "That it gets my heart pumping", category: "active" },
+      { text: "That it lets me make something", category: "creative" },
+      { text: "That I get to do it with others", category: "social" },
+      { text: "That it helps me relax", category: "calm" } ] },
+    { text: "Pick a fictional character you relate to.", options: [
+      { text: "The adventurer", category: "active" },
+      { text: "The artist", category: "creative" },
+      { text: "The connector", category: "social" },
+      { text: "The thinker", category: "calm" } ] },
+    { text: "How do you like to spend a rainy day?", options: [
+      { text: "Finding an indoor way to stay active", category: "active" },
+      { text: "Sketching, writing, or making something", category: "creative" },
+      { text: "Video-calling friends or hosting people", category: "social" },
+      { text: "Curling up with tea and quiet", category: "calm" } ] },
+    { text: "Pick a compliment you'd love to hear.", options: [
+      { text: "You have so much energy", category: "active" },
+      { text: "You're so imaginative", category: "creative" },
+      { text: "You bring people together", category: "social" },
+      { text: "You're so grounded and calm", category: "calm" } ] },
+    { text: "Choose a goal for this year.", options: [
+      { text: "Get stronger or more active", category: "active" },
+      { text: "Finish a creative project", category: "creative" },
+      { text: "Deepen my friendships", category: "social" },
+      { text: "Feel calmer and more present", category: "calm" } ] },
+    { text: "Last one — pick a Sunday morning.", options: [
+      { text: "An early run or bike ride", category: "active" },
+      { text: "A slow morning making something", category: "creative" },
+      { text: "Brunch with friends", category: "social" },
+      { text: "Coffee, quiet, and no agenda", category: "calm" } ] }
+  ];
+
+  // ---------------------------------------------------------------
+  // STATE
+  //
+  // No localStorage on purpose — this is a personal-learning site,
+  // so a page refresh should always start the quiz over cleanly.
+  // Everything below lives only in memory.
+  // ---------------------------------------------------------------
+  let currentQuestionIndex = 0;
+  let scores = { active: 0, creative: 0, social: 0, calm: 0 };
+
+  // ---------------------------------------------------------------
+  // QUIZ RENDERING
+  // ---------------------------------------------------------------
+  function renderQuestion() {
+    const question = QUESTIONS[currentQuestionIndex];
+
+    document.getElementById("progress-text").textContent =
+      `Question ${currentQuestionIndex + 1} of ${QUESTIONS.length}`;
+    document.getElementById("progress-bar-fill").style.width =
+      `${(currentQuestionIndex / QUESTIONS.length) * 100}%`;
+
+    document.getElementById("question-text").textContent = question.text;
+
+    const optionsContainer = document.getElementById("options-container");
+    optionsContainer.innerHTML = "";
+
+    question.options.forEach(option => {
+      const button = document.createElement("button");
+      button.className = "option-button";
+      button.textContent = option.text;
+      button.addEventListener("click", () => selectAnswer(option.category));
+      optionsContainer.appendChild(button);
+    });
+  }
+
+  function selectAnswer(category) {
+    scores[category] += 1;
+    currentQuestionIndex += 1;
+
+    if (currentQuestionIndex < QUESTIONS.length) {
+      renderQuestion();
+    } else {
+      showResult();
+    }
+  }
+
+  // ---------------------------------------------------------------
+  // RESULT
+  // ---------------------------------------------------------------
+  function getWinningCategoryKey() {
+    // Compares every category's score and keeps whichever is
+    // highest so far. If there's a tie, the first one found wins,
+    // which is good enough for a lighthearted quiz like this.
+    let winningKey = null;
+    let winningScore = -1;
+
+    for (const key in scores) {
+      if (scores[key] > winningScore) {
+        winningScore = scores[key];
+        winningKey = key;
+      }
+    }
+
+    return winningKey;
+  }
+
+  function showResult() {
+    document.getElementById("progress-bar-fill").style.width = "100%";
+    document.getElementById("quiz-section").classList.add("hidden");
+    document.getElementById("result-section").classList.remove("hidden");
+
+    const categoryKey = getWinningCategoryKey();
+    const category = CATEGORIES[categoryKey];
+    const flagshipHobby = category.hobbies[0];
+    const otherHobbies = category.hobbies.slice(1).map(h => h.name).join(" and ");
+
+    // Point the needle at the winning category's compass direction.
+    // The 1.2s CSS transition (see #needle in the <style> above) is
+    // what makes this a smooth animation instead of an instant jump.
+    document.getElementById("needle").style.transform =
+      `translate(-50%, -50%) rotate(${category.angle}deg)`;
+
+    document.getElementById("result-category").textContent = category.label;
+    document.getElementById("result-hobby-name").textContent = flagshipHobby.name;
+    document.getElementById("result-blurb").textContent = flagshipHobby.blurb;
+    document.getElementById("result-also-like").textContent =
+      `You might also enjoy: ${otherHobbies}`;
+  }
+
+  function restartQuiz() {
+    currentQuestionIndex = 0;
+    scores = { active: 0, creative: 0, social: 0, calm: 0 };
+
+    document.getElementById("needle").style.transform =
+      "translate(-50%, -50%) rotate(0deg)";
+
+    document.getElementById("result-section").classList.add("hidden");
+    document.getElementById("quiz-section").classList.remove("hidden");
+
+    renderQuestion();
+  }
+
+  document.getElementById("restart-button").addEventListener("click", restartQuiz);
+
+  // ---------------------------------------------------------------
+  // BROWSE ALL SECTION
+  //
+  // Always visible, independent of quiz progress. Lists every
+  // hobby, grouped by category.
+  // ---------------------------------------------------------------
+  function renderBrowseAll() {
+    const container = document.getElementById("browse-container");
+
+    for (const key in CATEGORIES) {
+      const category = CATEGORIES[key];
+
+      const group = document.createElement("div");
+      group.className = "category-group";
+
+      const heading = document.createElement("h3");
+      heading.textContent = category.label;
+      group.appendChild(heading);
+
+      const grid = document.createElement("div");
+      grid.className = "hobby-grid";
+
+      category.hobbies.forEach(hobby => {
+        const card = document.createElement("div");
+        card.className = "hobby-card";
+        card.innerHTML = `<strong>${hobby.name}</strong><span>${hobby.blurb}</span>`;
+        grid.appendChild(card);
+      });
+
+      group.appendChild(grid);
+      container.appendChild(group);
+    }
+  }
+
+  // ---------------------------------------------------------------
+  // START
+  // ---------------------------------------------------------------
+  renderQuestion();
+  renderBrowseAll();
+</script>
+
+</body>
+</html>

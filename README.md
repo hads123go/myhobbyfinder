@@ -1,4 +1,4 @@
-# Hobby Compass
+# My Hobby Finder
 
 A single-page site that asks a short quiz about you and points a compass
 needle at the hobby category that fits best — then recommends a specific
@@ -9,7 +9,6 @@ Built as a first coding project: plain HTML, CSS, and JavaScript in one
 file, no build step, no backend.
 
 **Live site:** https://hads123go.github.io/myhobbyfinder/
-(once GitHub Pages is enabled for this repo — see below)
 
 ## Running it locally
 

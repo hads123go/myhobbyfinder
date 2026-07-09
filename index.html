@@ -12,20 +12,132 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 
 <style>
-  /* ---------- Color palette & shared values ----------
-     Keeping these as CSS variables means every part of the page
-     that needs "the accent color" or "the dark background" points
-     back to one place, so a color can be changed in one spot. */
+  /* ---------- Color palette & themes ----------
+     Every color on the page reads from a CSS variable, so a whole
+     "theme" is just a set of values for these variables.
+
+     The default theme lives in :root below. Each other theme is a
+     [data-theme="..."] block that overrides some of the same
+     variables. The theme switcher (see the JavaScript near the
+     bottom) picks a theme by setting data-theme on the <html> tag,
+     and the browser repaints everything automatically.
+
+     Note: the variable named --text-light holds the *main* text
+     color for a theme (dark text on the light coastal themes), and
+     --bg holds the page background — the names describe their JOB,
+     not their lightness. */
   :root {
-    --bg: #1b1f2a;
-    --bg-card: #232838;
-    --text-light: #f4ecd8;
-    --text-muted: #aab0c4;
-    --paper: #f4ecd8;
-    --paper-text: #2a2417;
-    --accent: #c9a227;
-    --accent-dark: #a8841c;
-    --needle-south: #e8e2d0;
+    /* Default theme — "Sea Glass": soft seafoam & sand, coral accent */
+    --bg: #eaf1ec;
+    --bg-2: #dbe8e0;          /* second stop, for the soft background gradient */
+    --bg-card: #ffffff;
+    --text-light: #2f4640;
+    --text-muted: #6f8079;
+    --paper: #f4ede1;
+    --paper-text: #3a3427;
+    --accent: #e0876b;
+    --accent-dark: #c56f54;
+    --needle-south: #cdd8d1;
+    --btn-text: #ffffff;       /* text sitting on top of the accent color */
+    --option-border: #d6e1da;  /* was a hardcoded white; now theme-aware */
+    --option-hover-bg: #f1f6f2;
+    --track-bg: rgba(47, 70, 64, 0.12); /* progress bar background */
+    --weave: rgba(60, 80, 72, 0.05);    /* the faint linen texture lines */
+  }
+
+  [data-theme="nantucket"] {
+    /* Crisp & nautical: pale sky, white cards, nautical-red accent */
+    --bg: #eef4f8;
+    --bg-2: #dce9f2;
+    --bg-card: #ffffff;
+    --text-light: #16324a;
+    --text-muted: #5b7186;
+    --paper: #f6f1e7;
+    --paper-text: #2c3a44;
+    --accent: #cf4a54;
+    --accent-dark: #b03a48;
+    --needle-south: #cdd9e2;
+    --btn-text: #ffffff;
+    --option-border: #d5e2ec;
+    --option-hover-bg: #eef4f9;
+    --track-bg: rgba(22, 50, 74, 0.12);
+    --weave: rgba(22, 50, 74, 0.05);
+  }
+
+  [data-theme="shellsand"] {
+    /* Warm & sandy: driftwood sand, warm whites, terracotta accent */
+    --bg: #f3ebe0;
+    --bg-2: #ecdfce;
+    --bg-card: #fffaf3;
+    --text-light: #4a3f35;
+    --text-muted: #8a7c6d;
+    --paper: #ecd3c4;
+    --paper-text: #4a3f35;
+    --accent: #c07a58;
+    --accent-dark: #a56446;
+    --needle-south: #e2d3c4;
+    --btn-text: #fff7f0;
+    --option-border: #e3d5c6;
+    --option-hover-bg: #fbf3e9;
+    --track-bg: rgba(74, 63, 53, 0.12);
+    --weave: rgba(74, 63, 53, 0.05);
+  }
+
+  [data-theme="tidepool"] {
+    /* Deep & moody: ocean-teal at dusk, amber accent (a darker theme) */
+    --bg: #12403f;
+    --bg-2: #0e3433;
+    --bg-card: #1a4f4d;
+    --text-light: #eaf3ef;
+    --text-muted: #9fc0b8;
+    --paper: #f0e9db;
+    --paper-text: #23302c;
+    --accent: #f2a25c;
+    --accent-dark: #d9843f;
+    --needle-south: #bcd6cd;
+    --btn-text: #20303a;
+    --option-border: #2c605d;
+    --option-hover-bg: #235a58;
+    --track-bg: rgba(255, 255, 255, 0.12);
+    --weave: rgba(255, 255, 255, 0.04); /* light lines on a dark ground */
+  }
+
+  [data-theme="dawn"] {
+    /* Soft & pastel: peach-to-lilac sunrise, morning-blue cards, dusty rose */
+    --bg: #fbeee6;
+    --bg-2: #f3e3ef;
+    --bg-card: #fffdfb;
+    --text-light: #4b3b47;
+    --text-muted: #94808c;
+    --paper: #e7eef2;
+    --paper-text: #3a4650;
+    --accent: #e0899a;
+    --accent-dark: #cf7d8a;
+    --needle-south: #ead6dd;
+    --btn-text: #ffffff;
+    --option-border: #efe1e8;
+    --option-hover-bg: #fdf6fb;
+    --track-bg: rgba(75, 59, 71, 0.12);
+    --weave: rgba(75, 59, 71, 0.05);
+  }
+
+  [data-theme="oceanmist"] {
+    /* Soft & blue: baby-blue ocean tones, warm-sand hobby cards */
+    --bg: #eaf3fb;
+    --bg-2: #d7e9f7;
+    --bg-card: #ffffff;
+    --text-light: #274a63;
+    --text-muted: #6b8aa0;
+    --paper: #f2ece0;
+    --paper-text: #3a4650;
+    --accent: #4a90bd;
+    --accent-dark: #3b789f;
+    --needle-south: #cfe0ec;
+    --btn-text: #ffffff;
+    --option-border: #d3e4f1;
+    --option-hover-bg: #eef6fc;
+    --track-bg: rgba(39, 74, 99, 0.12);
+    --weave: rgba(39, 74, 99, 0.05);
   }
 
   * {
@@ -34,7 +146,14 @@
 
   body {
     margin: 0;
-    background: var(--bg);
+    /* Two faint crosshatched gradients make a subtle woven-linen
+       texture, layered on top of a soft two-tone background gradient.
+       All pure CSS — no image files, so nothing extra to load. */
+    background:
+      repeating-linear-gradient(45deg,  var(--weave) 0 1px, transparent 1px 6px),
+      repeating-linear-gradient(-45deg, var(--weave) 0 1px, transparent 1px 6px),
+      linear-gradient(165deg, var(--bg), var(--bg-2));
+    background-attachment: fixed;
     color: var(--text-light);
     font-family: 'Inter', sans-serif;
     line-height: 1.5;
@@ -66,6 +185,56 @@
     margin: 0;
   }
 
+  /* ---------- Theme switcher ----------
+     A row of pill buttons, one per theme. The buttons themselves
+     read from the current theme's variables, so the switcher
+     restyles itself along with the rest of the page. */
+  .theme-switcher {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 1.25rem;
+  }
+
+  .theme-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    background: var(--bg-card);
+    color: var(--text-light);
+    border: 1px solid var(--option-border);
+    border-radius: 999px;
+    padding: 0.4rem 0.85rem 0.4rem 0.55rem;
+    font-family: inherit;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: border-color 0.15s ease, transform 0.1s ease;
+  }
+
+  .theme-button:hover {
+    border-color: var(--accent);
+  }
+
+  .theme-button .dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+  }
+
+  /* The currently selected theme's button gets an accent ring. */
+  .theme-button[aria-pressed="true"] {
+    border-color: var(--accent);
+    box-shadow: inset 0 0 0 1px var(--accent);
+    font-weight: 600;
+  }
+
+  .theme-button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
   /* ---------- Quiz card ---------- */
   #quiz-section {
     background: var(--bg-card);
@@ -80,7 +249,7 @@
   }
 
   #progress-bar-track {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--track-bg);
     border-radius: 999px;
     height: 6px;
     margin-bottom: 1.5rem;
@@ -105,7 +274,7 @@
     text-align: left;
     background: var(--bg);
     color: var(--text-light);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    border: 1px solid var(--option-border);
     border-radius: 8px;
     padding: 0.85rem 1rem;
     margin-bottom: 0.65rem;
@@ -117,7 +286,7 @@
 
   .option-button:hover {
     border-color: var(--accent);
-    background: #2a3042;
+    background: var(--option-hover-bg);
   }
 
   /* ---------- Result section ---------- */
@@ -217,7 +386,7 @@
 
   button.primary-button {
     background: var(--accent);
-    color: var(--paper-text);
+    color: var(--btn-text);
     border: none;
     border-radius: 8px;
     padding: 0.75rem 1.5rem;
@@ -281,6 +450,8 @@
   <header>
     <h1>Hobby Compass</h1>
     <p>Answer a few questions and let the needle find your hobby.</p>
+    <!-- Theme buttons are injected here by JavaScript (renderThemeSwitcher). -->
+    <div id="theme-switcher" class="theme-switcher" role="group" aria-label="Color theme"></div>
   </header>
 
   <main>
@@ -328,8 +499,10 @@
   // DATA
   //
   // Four categories, each pointing at a compass direction. Each
-  // category has three hobbies. The first hobby listed in a
-  // category is the "flagship" one shown as the main result.
+  // category has a list of hobbies. The first hobby listed in a
+  // category is the "flagship" one shown as the main quiz result;
+  // the rest also appear in the "browse all" grid and the
+  // "you might also enjoy" line.
   // ---------------------------------------------------------------
   const CATEGORIES = {
     active: {
@@ -338,7 +511,17 @@
       hobbies: [
         { name: "Rock Climbing", blurb: "A full-body challenge that mixes strength with problem-solving." },
         { name: "Hiking", blurb: "Explore trails at your own pace, with a view as the reward." },
-        { name: "Cycling", blurb: "Cover ground, build endurance, and enjoy the wind in your face." }
+        { name: "Cycling", blurb: "Cover ground, build endurance, and enjoy the wind in your face." },
+        { name: "Trail Running", blurb: "Chase quiet miles on dirt paths where every run feels like an adventure." },
+        { name: "Swimming", blurb: "A full-body workout that's easy on the joints and endlessly calming." },
+        { name: "Kayaking", blurb: "Explore rivers and coastlines under your own paddle power." },
+        { name: "Surfing", blurb: "Read the waves and chase that weightless glide back to shore." },
+        { name: "Bouldering", blurb: "Short, punchy climbing puzzles solved close to the ground." },
+        { name: "Martial Arts", blurb: "Build discipline, focus, and confidence one form at a time." },
+        { name: "Dancing", blurb: "Move to the music and let your body do the talking." },
+        { name: "Tennis", blurb: "Fast rallies, quick feet, and a game that's easy to fall for." },
+        { name: "Skateboarding", blurb: "Balance, nerve, and the satisfying click of a landed trick." },
+        { name: "Rowing", blurb: "Find a rhythm on the water and pull in perfect sync." }
       ]
     },
     creative: {
@@ -347,7 +530,17 @@
       hobbies: [
         { name: "Painting", blurb: "Turn a blank canvas into whatever is in your head." },
         { name: "Photography", blurb: "Train your eye to notice the moments worth keeping." },
-        { name: "Woodworking", blurb: "Build something real and useful with your own two hands." }
+        { name: "Woodworking", blurb: "Build something real and useful with your own two hands." },
+        { name: "Pottery", blurb: "Center a lump of clay and shape something you'll actually use." },
+        { name: "Creative Writing", blurb: "Put the stories in your head onto the page, one line at a time." },
+        { name: "Playing an Instrument", blurb: "Turn steady practice into progress you can hear." },
+        { name: "Knitting", blurb: "Loop by loop, make something warm from a single strand of yarn." },
+        { name: "Baking", blurb: "Measure, mix, and fill the kitchen with something worth waiting for." },
+        { name: "Drawing", blurb: "All you need is a pencil and a little patience to start." },
+        { name: "Calligraphy", blurb: "Slow down and turn everyday words into small works of art." },
+        { name: "Sewing", blurb: "Make clothes and keepsakes that fit exactly the way you want." },
+        { name: "Film Making", blurb: "Tell a story frame by frame, from first idea to final cut." },
+        { name: "Jewelry Making", blurb: "Craft small, wearable pieces that feel entirely your own." }
       ]
     },
     social: {
@@ -356,7 +549,16 @@
       hobbies: [
         { name: "Board Games", blurb: "An excuse to get people around a table and compete for fun." },
         { name: "Team Sports", blurb: "Shared effort, shared wins, and a built-in group of friends." },
-        { name: "Volunteering", blurb: "Give your time to something bigger, alongside other people." }
+        { name: "Volunteering", blurb: "Give your time to something bigger, alongside other people." },
+        { name: "Dinner Parties", blurb: "Gather friends around good food and let the evening unfold." },
+        { name: "Improv Comedy", blurb: "Think on your feet, laugh a lot, and make it up as you go." },
+        { name: "Book Club", blurb: "Read something worth discussing, then discuss it with good company." },
+        { name: "Karaoke", blurb: "Grab the mic, pick your anthem, and bring the room together." },
+        { name: "Dungeons & Dragons", blurb: "Roll the dice and build a story with your friends over months." },
+        { name: "Trivia Nights", blurb: "Put your random knowledge to work with a team at the pub." },
+        { name: "Community Theater", blurb: "Rehearse, perform, and share the thrill of opening night." },
+        { name: "Group Fitness", blurb: "Sweat alongside others who keep you showing up." },
+        { name: "Choir", blurb: "Blend your voice with others and feel a song lift a whole room." }
       ]
     },
     calm: {
@@ -365,7 +567,16 @@
       hobbies: [
         { name: "Reading", blurb: "A quiet way to live a hundred other lives." },
         { name: "Gardening", blurb: "Slow, steady progress you can watch grow over a season." },
-        { name: "Meditation", blurb: "A daily reset for a calmer, more focused mind." }
+        { name: "Meditation", blurb: "A daily reset for a calmer, more focused mind." },
+        { name: "Yoga", blurb: "Move slowly, breathe deeply, and leave the mat feeling lighter." },
+        { name: "Journaling", blurb: "A few quiet minutes a day to clear your head onto paper." },
+        { name: "Birdwatching", blurb: "Slow down, look up, and notice the wildlife that's always been there." },
+        { name: "Puzzles", blurb: "Lose yourself in a thousand pieces until the picture appears." },
+        { name: "Stargazing", blurb: "Find a dark sky and let the universe put things in perspective." },
+        { name: "Origami", blurb: "Fold a flat sheet of paper into something quietly astonishing." },
+        { name: "Coloring", blurb: "Fill the lines, pick your palette, and let your mind wander." },
+        { name: "Houseplant Care", blurb: "Tend a little indoor jungle and watch it thrive by the window." },
+        { name: "Fishing", blurb: "Cast a line, settle in, and let the day slow to the water's pace." }
       ]
     }
   };
@@ -529,7 +740,12 @@
     const categoryKey = getWinningCategoryKey();
     const category = CATEGORIES[categoryKey];
     const flagshipHobby = category.hobbies[0];
-    const otherHobbies = category.hobbies.slice(1).map(h => h.name).join(" and ");
+    // Show just a few of the other hobbies (not the whole list), so the
+    // line stays short and readable even with ~12 hobbies per category.
+    const otherHobbies = category.hobbies
+      .slice(1, 4)
+      .map(h => h.name)
+      .join(", ");
 
     // Point the needle at the winning category's compass direction.
     // The 1.2s CSS transition (see #needle in the <style> above) is
@@ -594,8 +810,64 @@
   }
 
   // ---------------------------------------------------------------
+  // THEME SWITCHER
+  //
+  // Each theme is just a named set of CSS variables, defined in the
+  // [data-theme="..."] blocks in the <style> section above. To switch
+  // themes we put a matching data-theme attribute on the <html> tag
+  // and the browser repaints the whole page — no reload needed.
+  //
+  // State is in-memory only, like the quiz: a page refresh returns to
+  // the default "Sea Glass" theme.
+  // ---------------------------------------------------------------
+  const THEMES = [
+    { key: "seaglass",  name: "Sea Glass",    accent: "#e0876b" },
+    { key: "oceanmist", name: "Ocean Mist",   accent: "#4a90bd" },
+    { key: "nantucket", name: "Nantucket",    accent: "#cf4a54" },
+    { key: "shellsand", name: "Shell & Sand", accent: "#c07a58" },
+    { key: "tidepool",  name: "Tidepool",     accent: "#f2a25c" },
+    { key: "dawn",      name: "Coastal Dawn", accent: "#e0899a" }
+  ];
+
+  const DEFAULT_THEME = "seaglass";
+
+  // Switch the page to a theme, and update which button looks selected.
+  function applyTheme(themeKey) {
+    document.documentElement.setAttribute("data-theme", themeKey);
+
+    document.querySelectorAll(".theme-button").forEach(button => {
+      const isActive = button.dataset.themeKey === themeKey;
+      button.setAttribute("aria-pressed", isActive ? "true" : "false");
+    });
+  }
+
+  function handleThemeButtonClick(themeKey) {
+    applyTheme(themeKey);
+  }
+
+  // Build one pill button per theme and drop them into the header.
+  function renderThemeSwitcher() {
+    const container = document.getElementById("theme-switcher");
+
+    THEMES.forEach(theme => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "theme-button";
+      button.dataset.themeKey = theme.key;
+      button.setAttribute("aria-pressed", "false");
+      button.innerHTML =
+        `<span class="dot" style="background:${theme.accent}"></span>${theme.name}`;
+      button.addEventListener("click", () => handleThemeButtonClick(theme.key));
+      container.appendChild(button);
+    });
+
+    applyTheme(DEFAULT_THEME);
+  }
+
+  // ---------------------------------------------------------------
   // START
   // ---------------------------------------------------------------
+  renderThemeSwitcher();
   renderQuestion();
   renderBrowseAll();
 </script>

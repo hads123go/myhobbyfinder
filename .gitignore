@@ -1,2 +1,8 @@
 # macOS Finder metadata — never useful in a repo
 .DS_Store
+
+# Personal, machine-specific Claude Code settings (dev-server hook, etc.)
+.claude/settings.local.json
+
+# Playwright screenshot/test scratch output
+.playwright-mcp/

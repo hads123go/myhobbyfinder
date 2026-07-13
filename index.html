@@ -140,23 +140,91 @@
     --weave: rgba(39, 74, 99, 0.05);
   }
 
+  /* ---------- Background patterns ----------
+     Each pattern is a set of CSS background layers drawn on the
+     body::before overlay. They all reference var(--weave), so they
+     automatically take on the current theme's tint. "Linen" is the
+     default (in :root); data-pattern on <html> selects the others.
+     Selected via the settings dropdown (see renderPatternPicker). */
+  :root {
+    /* Linen — two crosshatched hairlines (the original texture) */
+    --pattern-image:
+      repeating-linear-gradient(45deg,  var(--weave) 0 1px, transparent 1px 6px),
+      repeating-linear-gradient(-45deg, var(--weave) 0 1px, transparent 1px 6px);
+    --pattern-size: auto;
+    --pattern-position: 0 0;
+  }
+
+  [data-pattern="dots"] {
+    /* Larger, denser dots so they read at the same subtle tint
+       (sparse tiny dots cover almost no area and vanish). */
+    --pattern-image: radial-gradient(var(--weave) 3px, transparent 3.3px);
+    --pattern-size: 14px 14px;
+    --pattern-position: 0 0;
+  }
+
+  [data-pattern="scallops"] {
+    /* Overlapping arcs — a shell / fish-scale look */
+    --pattern-image:
+      radial-gradient(circle at 50% 100%,  transparent 0 9px, var(--weave) 9px 10px, transparent 10px),
+      radial-gradient(circle at 0 100%,    transparent 0 9px, var(--weave) 9px 10px, transparent 10px),
+      radial-gradient(circle at 100% 100%, transparent 0 9px, var(--weave) 9px 10px, transparent 10px);
+    --pattern-size: 22px 22px;
+    --pattern-position: 0 0;
+  }
+
+  [data-pattern="grid"] {
+    /* Graph-paper — thin horizontal + vertical lines */
+    --pattern-image:
+      linear-gradient(var(--weave) 0 1px, transparent 1px),
+      linear-gradient(90deg, var(--weave) 0 1px, transparent 1px);
+    --pattern-size: 22px 22px;
+    --pattern-position: 0 0;
+  }
+
+  [data-pattern="stripes"] {
+    /* Single-direction diagonal stripes */
+    --pattern-image: repeating-linear-gradient(45deg, var(--weave) 0 1px, transparent 1px 10px);
+    --pattern-size: auto;
+    --pattern-position: 0 0;
+  }
+
+  [data-pattern="none"] {
+    /* Plain — no pattern, just the theme gradient */
+    --pattern-image: none;
+  }
+
   * {
     box-sizing: border-box;
   }
 
   body {
     margin: 0;
-    /* Two faint crosshatched gradients make a subtle woven-linen
-       texture, layered on top of a soft two-tone background gradient.
-       All pure CSS — no image files, so nothing extra to load. */
-    background:
-      repeating-linear-gradient(45deg,  var(--weave) 0 1px, transparent 1px 6px),
-      repeating-linear-gradient(-45deg, var(--weave) 0 1px, transparent 1px 6px),
-      linear-gradient(165deg, var(--bg), var(--bg-2));
+    /* The soft two-tone gradient lives on the body itself. The
+       decorative PATTERN (linen, dots, grid, …) is drawn separately on
+       the fixed ::before overlay below, so the pattern can be swapped
+       without touching the theme colors, and vice versa. */
+    background: linear-gradient(165deg, var(--bg), var(--bg-2));
     background-attachment: fixed;
     color: var(--text-light);
     font-family: 'Inter', sans-serif;
     line-height: 1.5;
+  }
+
+  /* Background-pattern overlay. Fixed to the viewport and pinned behind
+     all content (z-index: -1). It draws whichever pattern is selected —
+     controlled by data-pattern on <html> (see the [data-pattern="..."]
+     blocks) — tinted with the current theme's --weave color. Pure CSS,
+     no image files. pointer-events: none so it never blocks clicks. */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image: var(--pattern-image, none);
+    background-size: var(--pattern-size, auto);
+    background-position: var(--pattern-position, 0 0);
   }
 
   h1, h2, h3 {
@@ -231,6 +299,41 @@
   }
 
   .theme-button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  /* ---------- Settings (background-pattern dropdown) ---------- */
+  .settings-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.9rem;
+  }
+
+  .settings-label {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+  }
+
+  .settings-select {
+    background: var(--bg-card);
+    color: var(--text-light);
+    border: 1px solid var(--option-border);
+    border-radius: 8px;
+    padding: 0.35rem 0.6rem;
+    font-family: inherit;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+
+  .settings-select:hover {
+    border-color: var(--accent);
+  }
+
+  .settings-select:focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
   }
@@ -452,6 +555,11 @@
     <p>Answer a few questions and let the needle find your hobby.</p>
     <!-- Theme buttons are injected here by JavaScript (renderThemeSwitcher). -->
     <div id="theme-switcher" class="theme-switcher" role="group" aria-label="Color theme"></div>
+    <!-- Background-pattern dropdown, options filled by renderPatternPicker. -->
+    <div class="settings-row">
+      <label class="settings-label" for="pattern-select">Background pattern</label>
+      <select id="pattern-select" class="settings-select"></select>
+    </div>
   </header>
 
   <main>
@@ -865,9 +973,57 @@
   }
 
   // ---------------------------------------------------------------
+  // BACKGROUND PATTERN PICKER
+  //
+  // Like the themes, each pattern is defined purely in CSS (the
+  // [data-pattern="..."] blocks in the <style> above). We select one
+  // by setting data-pattern on the <html> tag; the CSS draws it on the
+  // body::before overlay, tinted by the current theme color.
+  //
+  // In-memory only, like everything else: a refresh returns to the
+  // default "Linen" pattern.
+  // ---------------------------------------------------------------
+  const PATTERNS = [
+    { key: "linen",    name: "Linen (default)" },
+    { key: "dots",     name: "Polka dots" },
+    { key: "scallops", name: "Scallops (shells)" },
+    { key: "grid",     name: "Graph-paper grid" },
+    { key: "stripes",  name: "Diagonal stripes" },
+    { key: "none",     name: "None (plain)" }
+  ];
+
+  const DEFAULT_PATTERN = "linen";
+
+  // Apply a pattern by name (used on load and on every dropdown change).
+  function applyPattern(patternKey) {
+    document.documentElement.setAttribute("data-pattern", patternKey);
+  }
+
+  function handlePatternChange(event) {
+    applyPattern(event.target.value);
+  }
+
+  // Fill the dropdown with one <option> per pattern and wire it up.
+  function renderPatternPicker() {
+    const select = document.getElementById("pattern-select");
+
+    PATTERNS.forEach(pattern => {
+      const option = document.createElement("option");
+      option.value = pattern.key;
+      option.textContent = pattern.name;
+      select.appendChild(option);
+    });
+
+    select.value = DEFAULT_PATTERN;
+    select.addEventListener("change", handlePatternChange);
+    applyPattern(DEFAULT_PATTERN);
+  }
+
+  // ---------------------------------------------------------------
   // START
   // ---------------------------------------------------------------
   renderThemeSwitcher();
+  renderPatternPicker();
   renderQuestion();
   renderBrowseAll();
 </script>
